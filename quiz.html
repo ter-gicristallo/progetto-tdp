@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Patente B</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+
+    header {
+      background: #16213e;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      border-bottom: 2px solid #f5a623;
+    }
+    header span { color: #f5a623; }
+
+    /* SCHERMATE */
+    .screen { display: none; max-width: 700px; margin: 2rem auto; padding: 1rem; }
+    .screen.active { display: block; }
+
+    /* HOME */
+    .home-title { text-align: center; font-size: 1.8rem; margin-bottom: .5rem; }
+    .home-sub { text-align: center; color: #aaa; margin-bottom: 2rem; }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+    .card {
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 10px;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: #f5a623; }
+    .card .icon { font-size: 2rem; margin-bottom: .5rem; }
+    .card h3 { font-size: 1rem; margin-bottom: .3rem; }
+    .card p { font-size: .8rem; color: #aaa; }
+
+    /* QUIZ */
+    .quiz-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+    .counter { font-size: .9rem; color: #aaa; }
+    .timer { background: #16213e; padding: .4rem 1rem; border-radius: 20px; font-weight: bold; }
+    .timer.red { color: #ef4444; border: 1px solid #ef4444; }
+
+    /* barra progresso */
+    .progress { height: 6px; background: #0f3460; border-radius: 3px; margin-bottom: 1.5rem; }
+    .progress-bar { height: 100%; background: #f5a623; border-radius: 3px; transition: width .3s; }
+
+    .domanda {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .risposte { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1rem; }
+    .risposta {
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      cursor: pointer;
+      color: #eee;
+      font-size: .95rem;
+      text-align: left;
+      transition: border-color .15s;
+    }
+    .risposta:hover:not(:disabled) { border-color: #f5a623; }
+    .risposta.corretta { border-color: #22c55e; background: rgba(34,197,94,.1); }
+    .risposta.sbagliata { border-color: #ef4444; background: rgba(239,68,68,.1); }
+
+    .spiegazione {
+      display: none;
+      background: #0f3460;
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: .88rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .spiegazione.show { display: block; }
+
+    /* ERRORI */
+    .errori { display: flex; gap: .4rem; align-items: center; }
+    .pallino {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #0f3460;
+      transition: background .3s;
+    }
+    .pallino.pieno { background: #ef4444; }
+
+    /* RISULTATI */
+    .risultato-centro { text-align: center; margin-bottom: 2rem; }
+    .grande-emoji { font-size: 4rem; display: block; margin-bottom: .5rem; }
+    .punteggio { font-size: 3rem; font-weight: bold; margin: .5rem 0; }
+    .punteggio.pass { color: #22c55e; }
+    .punteggio.fail { color: #ef4444; }
+
+    .griglia-stat {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat .num { font-size: 1.8rem; font-weight: bold; }
+    .stat .etichetta { font-size: .75rem; color: #aaa; margin-top: .2rem; }
+
+    /* RIEPILOGO */
+    .riepilogo-item {
+      background: #16213e;
+      border-left: 3px solid #0f3460;
+      border-radius: 6px;
+      padding: .8rem 1rem;
+      margin-bottom: .5rem;
+      font-size: .85rem;
+    }
+    .riepilogo-item.ok { border-left-color: #22c55e; }
+    .riepilogo-item.no { border-left-color: #ef4444; }
+    .riepilogo-label { font-size: .72rem; font-weight: bold; margin-bottom: .3rem; }
+    .riepilogo-label.ok { color: #22c55e; }
+    .riepilogo-label.no { color: #ef4444; }
+    .corretta-txt { color: #22c55e; font-size: .82rem; }
+
+    /* PULSANTI */
+    .btn {
+      padding: .7rem 1.6rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .95rem;
+      font-weight: bold;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-arancio { background: #f5a623; color: #111; }
+    .btn-grigio { background: #16213e; color: #eee; border: 1px solid #0f3460; }
+    .pulsanti { display: flex; gap: .8rem; justify-content: flex-end; margin-top: 1rem; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+<header>🚗 Quiz <span>Patente B</span></header>
+
+<!-- HOME -->
+<div class="screen active" id="home">
+  <div class="home-title">Simulazione Quiz Patente B</div>
+  <p class="home-sub">Scegli come vuoi allenarti</p>
+  <div class="card-grid">
+    <div class="card" onclick="avvia('esame')">
+      <div class="icon">📋</div>
+      <h3>Esame Ufficiale</h3>
+      <p>40 domande, 30 minuti, max 3 errori</p>
+    </div>
+    <div class="card" onclick="avvia('pratica')">
+      <div class="icon">🎯</div>
+      <h3>Allenamento</h3>
+      <p>Senza timer, spiegazioni immediate</p>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="screen" id="quiz">
+  <div class="quiz-info">
+    <span class="counter">Domanda <b id="num">1</b> / <b id="tot">40</b></span>
+    <span class="timer" id="timer">30:00</span>
+    <div class="errori" id="errori"></div>
+  </div>
+  <div class="progress"><div class="progress-bar" id="barra" style="width:0%"></div></div>
+  <div class="domanda" id="testo-domanda"></div>
+  <div class="risposte" id="lista-risposte"></div>
+  <div class="spiegazione" id="spiegazione"></div>
+  <div class="pulsanti">
+    <button class="btn btn-grigio" onclick="abbandona()">Abbandona</button>
+    <button class="btn btn-arancio" id="btn-prossima" style="display:none" onclick="prossima()">Prossima →</button>
+  </div>
+</div>
+
+<!-- RISULTATI -->
+<div class="screen" id="risultati">
+  <div class="risultato-centro">
+    <span class="grande-emoji" id="emoji-risultato"></span>
+    <div id="titolo-risultato" style="font-size:1.5rem;font-weight:bold;margin-bottom:.3rem;"></div>
+    <div class="punteggio" id="punteggio-risultato"></div>
+    <div style="color:#aaa;font-size:.9rem" id="sottotitolo-risultato"></div>
+  </div>
+  <div class="griglia-stat">
+    <div class="stat"><div class="num" style="color:#22c55e" id="r-corrette">0</div><div class="etichetta">Corrette</div></div>
+    <div class="stat"><div class="num" style="color:#ef4444" id="r-errate">0</div><div class="etichetta">Errate</div></div>
+    <div class="stat"><div class="num" style="color:#f5a623" id="r-tempo">0:00</div><div class="etichetta">Tempo</div></div>
+  </div>
+  <div id="riepilogo"></div>
+  <div class="pulsanti">
+    <button class="btn btn-grigio" onclick="mostraSchermata('home')">🏠 Home</button>
+    <button class="btn btn-arancio" onclick="avvia(modalitaCorrente)">🔄 Riprova</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DOMANDE
+// ══════════════════════════════════════════════
+const domande = [
+  // SEGNALI
+  { testo: 'Il segnale STOP obbliga il conducente a:', risposte: ['Rallentare e dare la precedenza', 'Fermarsi solo se ci sono veicoli', 'Fermarsi sempre, anche se la strada è libera'], corretta: 2, spiegazione: 'Lo STOP impone sempre la fermata prima di immettersi, indipendentemente dal traffico.' },
+  { testo: 'Il triangolo rovesciato "Dare Precedenza" obbliga a:', risposte: ['Fermarsi sempre', 'Rallentare e cedere la precedenza', 'Procedere senza rallentare'], corretta: 1, spiegazione: 'A differenza dello STOP, basta rallentare e cedere il passo senza fermarsi obbligatoriamente.' },
+  { testo: 'La linea continua di mezzeria:', risposte: ['Può essere attraversata per sorpassare', 'Non può essere attraversata mai', 'Si può attraversare solo di notte'], corretta: 1, spiegazione: 'La striscia continua vieta sorpassi e superamenti in qualsiasi condizione.' },
+  { testo: 'I segnali di pericolo hanno forma:', risposte: ['Circolare con bordo rosso', 'Triangolare con vertice in alto e bordo rosso', 'Quadrata con sfondo blu'], corretta: 1, spiegazione: 'Tutti i segnali di pericolo sono triangoli con vertice verso l\'alto, fondo bianco e bordo rosso.' },
+  { testo: 'Le strisce pedonali indicano:', risposte: ['Un parcheggio per pedoni', 'Un attraversamento pedonale privilegiato', 'Una zona di pericolo'], corretta: 1, spiegazione: 'Le strisce bianche indicano un attraversamento privilegiato; i veicoli devono cedere la precedenza.' },
+  { testo: 'Il segnale di "Senso Unico" indica:', risposte: ['Strada percorribile in entrambe le direzioni', 'Strada percorribile solo nella direzione della freccia', 'Strada con una sola corsia'], corretta: 1, spiegazione: 'Il senso unico (freccia bianca su sfondo blu) consente la circolazione in una sola direzione.' },
+  { testo: 'Il segnale di divieto di transito è:', risposte: ['Un triangolo rosso', 'Un cerchio bianco con barra rossa orizzontale', 'Un quadrato blu'], corretta: 1, spiegazione: 'Il divieto di transito è un cerchio bianco con una barra rossa orizzontale al centro.' },
+  { testo: 'I segnali di zona (ZTL, zona residenziale) sono:', risposte: ['Rossi su sfondo bianco', 'Bianchi su sfondo blu', 'Gialli su sfondo nero'], corretta: 1, spiegazione: 'I segnali di zona sono sempre bianchi su sfondo blu.' },
+
+  // PRECEDENZA
+  { testo: 'In un incrocio senza segnali, ha la precedenza chi viene:', risposte: ['Da sinistra', 'Da destra', 'Il veicolo più veloce'], corretta: 1, spiegazione: 'La regola base è la precedenza a destra in tutti gli incroci senza segnaletica.' },
+  { testo: 'I veicoli già in rotatoria rispetto a chi entra:', risposte: ['Devono cedere la precedenza', 'Hanno la precedenza', 'Hanno precedenza solo a destra'], corretta: 1, spiegazione: 'Chi è già in rotatoria ha sempre la precedenza su chi si immette.' },
+  { testo: 'I tram rispetto agli altri veicoli:', risposte: ['Non hanno mai la precedenza', 'Hanno sempre la precedenza', 'Hanno precedenza solo in curva'], corretta: 1, spiegazione: 'I tram, essendo rotabili su rotaia, hanno sempre la precedenza sui veicoli stradali.' },
+  { testo: 'I pedoni sulle strisce pedonali:', risposte: ['Hanno precedenza solo col semaforo verde', 'Hanno sempre la precedenza sui veicoli', 'Devono aspettare che la strada sia libera'], corretta: 1, spiegazione: 'Il conducente deve sempre cedere la precedenza ai pedoni sulle strisce, con o senza semaforo.' },
+  { testo: 'Un autobus che riprende la marcia dalla fermata (lampeggiante acceso):', risposte: ['Deve aspettare il traffico libero', 'Ha diritto di precedenza', 'Ha la precedenza assoluta su tutto'], corretta: 1, spiegazione: 'Fuori dai centri abitati i conducenti devono agevolare la ripartenza dell\'autobus con lampeggiante attivato.' },
+  { testo: 'Chi si immette da una strada privata in una pubblica:', risposte: ['Ha la precedenza', 'Deve cedere la precedenza a tutti', 'Cede solo a chi viene da sinistra'], corretta: 1, spiegazione: 'Chi proviene da strade private, passi carrai o parcheggi cede sempre a chi è sulla strada pubblica.' },
+
+  // VELOCITÀ E DISTANZE
+  { testo: 'Il limite di velocità in autostrada per le autovetture è:', risposte: ['110 km/h', '130 km/h', '150 km/h'], corretta: 1, spiegazione: 'Il limite in autostrada è 130 km/h, che scende a 110 km/h con pioggia o neve.' },
+  { testo: 'Il limite generale nei centri abitati è:', risposte: ['30 km/h', '50 km/h', '70 km/h'], corretta: 1, spiegazione: 'Il limite nei centri abitati è 50 km/h, salvo segnali diversi.' },
+  { testo: 'Raddoppiando la velocità, lo spazio di frenata:', risposte: ['Raddoppia', 'Quadruplica', 'Rimane uguale'], corretta: 1, spiegazione: 'Lo spazio di frenata cresce con il quadrato della velocità: 2x velocità = 4x spazio.' },
+  { testo: 'A 100 km/h, in un secondo percorri circa:', risposte: ['15 metri', '28 metri', '50 metri'], corretta: 1, spiegazione: '100 km/h = 100.000 m ÷ 3.600 s ≈ 27,8 metri al secondo.' },
+  { testo: 'Il tempo di reazione medio di un conducente è:', risposte: ['0,3 secondi', '1 secondo', '3 secondi'], corretta: 1, spiegazione: 'In condizioni normali il tempo di reazione è circa 1 secondo; aumenta con stanchezza e distrazione.' },
+  { testo: 'In presenza di nebbia è obbligatorio:', risposte: ['Aumentare la velocità per uscirne prima', 'Ridurre la velocità e aumentare la distanza', 'Tenere gli abbaglianti accesi'], corretta: 1, spiegazione: 'Con nebbia: velocità ridotta, distanze aumentate, fendinebbia anteriori e posteriori accesi.' },
+  { testo: 'Su strade extraurbane principali a 4 corsie il limite è:', risposte: ['90 km/h', '110 km/h', '130 km/h'], corretta: 1, spiegazione: 'Sulle strade extraurbane principali il limite è 110 km/h.' },
+
+  // ALCOL E DROGHE
+  { testo: 'Il tasso alcolemico massimo per conducenti adulti (patente > 3 anni) è:', risposte: ['0,8 g/l', '0,5 g/l', '1,0 g/l'], corretta: 1, spiegazione: 'Per i conducenti adulti senza limitazioni il limite legale è 0,5 g/l di alcol nel sangue.' },
+  { testo: 'Per i neopatentati (primi 3 anni) il tasso alcolemico consentito è:', risposte: ['0,5 g/l', '0,2 g/l', '0,0 g/l'], corretta: 2, spiegazione: 'Per neopatentati, conducenti professionali e under 21 il limite è 0,0 g/l.' },
+  { testo: "L'alcol influisce sulla guida perché:", risposte: ['Migliora i riflessi', 'Rallenta i riflessi e altera la percezione', 'Migliora la visione notturna'], corretta: 1, spiegazione: "L'alcol deprime il sistema nervoso: riduce riflessi, altera la percezione di velocità e distanze." },
+  { testo: 'Guidare sotto effetto di droghe è:', risposte: ['Permesso in piccole dosi', 'Sempre vietato', 'Permesso solo di giorno'], corretta: 1, spiegazione: 'La guida sotto droghe è sempre vietata, qualunque sia la sostanza o la quantità.' },
+  { testo: 'La polizia può effettuare il test alcolimetrico:', risposte: ['Solo dopo incidenti', 'Solo se il guidatore mostra segni di ebbrezza', 'A qualsiasi conducente, anche senza motivo'], corretta: 2, spiegazione: 'I controlli alcolimetrici possono essere effettuati a qualunque conducente in qualsiasi momento.' },
+
+  // SORPASSO
+  { testo: 'Il sorpasso avviene normalmente:', risposte: ['A destra', 'A sinistra', 'Da entrambi i lati'], corretta: 1, spiegazione: 'Il sorpasso avviene sempre a sinistra, salvo eccezioni (veicolo che svolta a sinistra, tram, ecc.).' },
+  { testo: 'Il sorpasso è vietato:', risposte: ['In rettilineo libero', 'In curva, su dossi e agli incroci', 'In autostrada'], corretta: 1, spiegazione: 'È vietato dove la visibilità è limitata: curve, dossi, incroci, strisce pedonali.' },
+  { testo: 'Il veicolo sorpassato deve:', risposte: ['Accelerare', 'Non accelerare e agevolare il sorpasso se necessario', 'Frenare bruscamente'], corretta: 1, spiegazione: 'Chi viene sorpassato non deve ostacolare né accelerare, e deve agevolare il sorpasso se necessario.' },
+
+  // CINTURE E SICUREZZA
+  { testo: "La cintura di sicurezza è obbligatoria:", risposte: ['Solo per il guidatore', 'Solo in autostrada', 'Per tutti i passeggeri, anche posteriori'], corretta: 2, spiegazione: 'La cintura è obbligatoria per tutti i passeggeri su tutti i tipi di strada.' },
+  { testo: 'I bambini sotto 150 cm devono viaggiare:', risposte: ['Sul sedile anteriore', 'Su seggiolini omologati', 'Normalmente se allacciati'], corretta: 1, spiegazione: 'I bambini sotto 150 cm devono usare appositi seggiolini o rialzi omologati.' },
+  { testo: "L'airbag funziona correttamente solo se:", risposte: ['Il veicolo è recente', 'La cintura è allacciata', 'Il sedile è in posizione verticale'], corretta: 1, spiegazione: "L'airbag è progettato per lavorare insieme alla cintura; senza di essa può causare lesioni." },
+  { testo: 'Il casco è obbligatorio per:', risposte: ['Solo i minori su ciclomotori', 'Solo i motociclisti', 'Tutti i conducenti e passeggeri di ciclomotori e moto'], corretta: 2, spiegazione: 'Il casco è obbligatorio per conducenti e passeggeri di ciclomotori e motocicli di qualsiasi cilindrata.' },
+
+  // NORME GENERALI
+  { testo: 'Usare il cellulare in mano durante la guida è:', risposte: ['Permesso per brevi conversazioni', 'Permesso con auricolare', 'Sempre vietato'], corretta: 2, spiegazione: 'È vietato usare il telefono tenuto in mano; la distrazione è tra le principali cause di incidente.' },
+  { testo: 'Il gilet ad alta visibilità va indossato quando si esce dal veicolo fermo in carreggiata:', risposte: ['Solo di notte', 'Solo in autostrada', 'Sempre, in qualsiasi condizione'], corretta: 2, spiegazione: 'Il gilet catarifrangente è obbligatorio ogni volta che si scende dal veicolo sulla carreggiata o banchina.' },
+  { testo: 'Il triangolo di emergenza va posto:', risposte: ['Sempre a 50 m', 'A distanza adeguata: min 50 m su strade ordinarie, 100 m in autostrada', 'Solo davanti al veicolo'], corretta: 1, spiegazione: 'Il triangolo va posizionato dietro il veicolo: minimo 50 m su strade ordinarie, 100 m in autostrada.' },
+  { testo: 'In caso di incidente con soli danni materiali:', risposte: ['Bisogna sempre chiamare la polizia', 'I conducenti possono compilare il modulo CID senza chiamare la polizia', 'Bisogna abbandonare il veicolo'], corretta: 1, spiegazione: 'Se non ci sono feriti, è sufficiente compilare il modulo CAI/CID senza obbligatoriamente avvisare le forze dell\'ordine.' },
+
+  // AMBIENTE
+  { testo: 'I veicoli a combustione emettono:', risposte: ['Solo rumore', 'CO2, NOx e particolato dannosi per la salute', 'Solo vapore acqueo'], corretta: 1, spiegazione: 'I motori a combustione emettono anidride carbonica (CO2), ossidi di azoto (NOx) e particolato (PM).' },
+  { testo: 'La guida ecologica (eco-driving) prevede:', risposte: ['Alta velocità per ridurre i tempi', 'Accelerazioni graduali e velocità costante', 'Tenere il motore acceso in sosta'], corretta: 1, spiegazione: 'L\'eco-driving riduce consumi ed emissioni attraverso accelerazioni dolci, anticipo delle frenate e velocità costante.' },
+  { testo: 'I pneumatici sgonfi rispetto a quelli gonfi correttamente:', risposte: ['Consumano meno carburante', 'Aumentano i consumi e le emissioni', 'Non hanno effetti sui consumi'], corretta: 1, spiegazione: 'Pneumatici sgonfi aumentano la resistenza al rotolamento, incrementando consumi fino al 4% e le emissioni.' },
+];
+
+// ══════════════════════════════════════════════
+//  VARIABILI DI STATO
+// ══════════════════════════════════════════════
+let domandeCorrenti = [];
+let indice = 0;
+let errori = 0;
+let risposte = [];
+let timerID = null;
+let secondiRimasti = 0;
+let inizioTempo = 0;
+let modalitaCorrente = 'esame';
+
+// ══════════════════════════════════════════════
+//  FUNZIONI PRINCIPALI
+// ══════════════════════════════════════════════
+
+// Mescola un array (algoritmo Fisher-Yates)
+function mescola(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function mostraSchermata(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function avvia(modalita) {
+  modalitaCorrente = modalita;
+  indice = 0;
+  errori = 0;
+  risposte = [];
+  inizioTempo = Date.now();
+
+  domandeCorrenti = mescola(domande).slice(0, modalita === 'esame' ? 40 : domande.length);
+
+  // timer solo in modalità esame
+  clearInterval(timerID);
+  const timerEl = document.getElementById('timer');
+  if (modalita === 'esame') {
+    secondiRimasti = 1800;
+    timerEl.style.display = 'block';
+    aggiornaTimer();
+    timerID = setInterval(() => {
+      secondiRimasti--;
+      aggiornaTimer();
+      if (secondiRimasti <= 0) fineQuiz('timeout');
+    }, 1000);
+  } else {
+    timerEl.style.display = 'none';
+  }
+
+  mostraSchermata('quiz');
+  mostraDomanda();
+}
+
+function aggiornaTimer() {
+  const m = String(Math.floor(secondiRimasti / 60)).padStart(2, '0');
+  const s = String(secondiRimasti % 60).padStart(2, '0');
+  const el = document.getElementById('timer');
+  el.textContent = m + ':' + s;
+  el.className = 'timer' + (secondiRimasti < 300 ? ' red' : '');
+}
+
+function mostraDomanda() {
+  const q = domandeCorrenti[indice];
+  const totale = domandeCorrenti.length;
+
+  // aggiorna intestazione
+  document.getElementById('num').textContent = indice + 1;
+  document.getElementById('tot').textContent = totale;
+  document.getElementById('barra').style.width = (indice / totale * 100) + '%';
+
+  // pallini errori (solo esame)
+  const erroriEl = document.getElementById('errori');
+  erroriEl.innerHTML = modalitaCorrente === 'esame'
+    ? '<span style="font-size:.78rem;color:#aaa;margin-right:.3rem">Errori:</span>' +
+      [0,1,2].map(i => `<div class="pallino${i < errori ? ' pieno' : ''}"></div>`).join('')
+    : '';
+
+  // testo domanda
+  document.getElementById('testo-domanda').textContent = q.testo;
+
+  // risposte mescolate
+  const lista = document.getElementById('lista-risposte');
+  lista.innerHTML = '';
+  const ordine = mescola([0, 1, 2]);
+  ordine.forEach((origIdx, pos) => {
+    const btn = document.createElement('button');
+    btn.className = 'risposta';
+    btn.textContent = ['A','B','C'][pos] + ') ' + q.risposte[origIdx];
+    btn.dataset.orig = origIdx;
+    btn.onclick = () => selezionaRisposta(origIdx, btn);
+    lista.appendChild(btn);
+  });
+
+  // nascondi spiegazione e pulsante
+  document.getElementById('spiegazione').className = 'spiegazione';
+  document.getElementById('btn-prossima').style.display = 'none';
+}
+
+function selezionaRisposta(scelta, btnCliccato) {
+  const q = domandeCorrenti[indice];
+  const corretta = scelta === q.corretta;
+
+  // disabilita tutti i bottoni e colora
+  document.querySelectorAll('.risposta').forEach(btn => {
+    btn.disabled = true;
+    const orig = parseInt(btn.dataset.orig);
+    if (orig === q.corretta) btn.classList.add('corretta');
+    else if (btn === btnCliccato && !corretta) btn.classList.add('sbagliata');
+  });
+
+  // mostra spiegazione
+  const sp = document.getElementById('spiegazione');
+  sp.textContent = (corretta ? '✅ ' : '❌ ') + q.spiegazione;
+  sp.className = 'spiegazione show';
+
+  // salva risposta
+  risposte.push({ indice, scelta, corretta });
+  if (!corretta) errori++;
+
+  // aggiorna pallini errori
+  document.getElementById('errori').innerHTML = modalitaCorrente === 'esame'
+    ? '<span style="font-size:.78rem;color:#aaa;margin-right:.3rem">Errori:</span>' +
+      [0,1,2].map(i => `<div class="pallino${i < errori ? ' pieno' : ''}"></div>`).join('')
+    : '';
+
+  // fine quiz?
+  const ultimalDomanda = indice >= domandeCorrenti.length - 1;
+  const troppiErrori = modalitaCorrente === 'esame' && errori >= 3;
+
+  if (troppiErrori) {
+    setTimeout(() => fineQuiz('errori'), 1200);
+  } else if (ultimalDomanda) {
+    setTimeout(() => fineQuiz('completo'), 800);
+  } else {
+    document.getElementById('btn-prossima').style.display = 'inline-block';
+  }
+}
+
+function prossima() {
+  indice++;
+  mostraDomanda();
+}
+
+function abbandona() {
+  if (confirm('Vuoi abbandonare il quiz?')) {
+    clearInterval(timerID);
+    mostraSchermata('home');
+  }
+}
+
+function fineQuiz(motivo) {
+  clearInterval(timerID);
+
+  const tempoImpiegato = Math.round((Date.now() - inizioTempo) / 1000);
+  const corrette = risposte.filter(r => r.corretta).length;
+  const errate = risposte.length - corrette;
+  const pct = Math.round(corrette / domandeCorrenti.length * 100);
+  const superato = modalitaCorrente === 'esame' ? (errori < 3 && pct >= 90) : pct >= 70;
+
+  // emoji e testo
+  const messaggi = {
+    timeout: ['⏰', 'Tempo scaduto!', 'Il tempo è terminato.'],
+    errori:   ['❌', 'Non superato', 'Hai raggiunto il limite massimo di errori.'],
+    completo: superato ? ['🎉', 'Superato!', 'Ottimo risultato!'] : ['😞', 'Non superato', 'Riprova, ci sei quasi!'],
+  };
+  const [emoji, titolo, sub] = messaggi[motivo] || messaggi.completo;
+
+  document.getElementById('emoji-risultato').textContent = emoji;
+  document.getElementById('titolo-risultato').textContent = titolo;
+  document.getElementById('punteggio-risultato').textContent = pct + '%';
+  document.getElementById('punteggio-risultato').className = 'punteggio ' + (superato ? 'pass' : 'fail');
+  document.getElementById('sottotitolo-risultato').textContent = sub;
+
+  // statistiche
+  document.getElementById('r-corrette').textContent = corrette;
+  document.getElementById('r-errate').textContent = errate;
+  const m = String(Math.floor(tempoImpiegato / 60)).padStart(2,'0');
+  const s = String(tempoImpiegato % 60).padStart(2,'0');
+  document.getElementById('r-tempo').textContent = m + ':' + s;
+
+  // riepilogo domande
+  const riepilogo = document.getElementById('riepilogo');
+  riepilogo.innerHTML = '<h3 style="margin-bottom:.8rem">Riepilogo risposte</h3>';
+  risposte.forEach(r => {
+    const q = domandeCorrenti[r.indice];
+    const div = document.createElement('div');
+    div.className = 'riepilogo-item ' + (r.corretta ? 'ok' : 'no');
+    div.innerHTML = `
+      <div class="riepilogo-label ${r.corretta ? 'ok' : 'no'}">${r.corretta ? '✓ Corretta' : '✗ Errata'}</div>
+      <div>${q.testo}</div>
+      ${!r.corretta ? `<div class="corretta-txt">Risposta corretta: ${q.risposte[q.corretta]}</div>` : ''}
+    `;
+    riepilogo.appendChild(div);
+  });
+
+  mostraSchermata('risultati');
+}
+</script>
+</body>
+</html>
